@@ -66,20 +66,17 @@ public class MP1 {
             if (!lList.contains(token))
                 list.add(token);
         }
-
-        //System.out.println("Check: " + list);
         return list;
     }
 
 
 
-    private String[] findTop20Words(String message, List lList) {
-        String[] ret = new String[20];
-        //System.out.println("2. Checkout: " + message);
+    private void findTop20Words(String message, List lList) {
+        
         ArrayList<String> listOfWords = preprocess(message, lList);
         Iterator<String> it = listOfWords.iterator();
-           int index = 0;
-        //System.out.println("3. Checkout: ");
+
+        int index = 0;
         while (it.hasNext()) {
             String theNext = it.next();
             if (trace.containsKey(theNext))
@@ -88,11 +85,8 @@ public class MP1 {
                 trace.put(theNext, value);
             } else {
                 trace.put(theNext, 1);
-            }
-            //ret[index++] = it.next();    
+            }   
         }
-
-        return new String[20];
     }
 
     private ArrayList<String> getEntireFile() throws FileNotFoundException, IOException {
@@ -122,26 +116,19 @@ public class MP1 {
     public String[] process() throws Exception {
         String[] ret = new String[20];
        
-        //TODO
         ArrayList<String> listOfRows = getEntireFile();
         Integer[] num = getIndexes();
         List lList = Arrays.asList(stopWordsArray);
 
         for (int i=0; i<num.length; i++) {
-            //System.out.println("1. Checkout: " + listOfRows.size());
-            //findTop20Words(listOfRows.get(0), lList);
             findTop20Words(listOfRows.get(num[i]), lList);
         }
-        //System.out.println("Before sorting: ");
 
         for(String key : trace.keySet()) {
             Integer value = trace.get(key);
-            //System.out.println("key pair: (" + key + ", " + value + ")");
         }
-
-        //TreeMap<String, Integer> sortedMap = SortByValue(trace);  
+ 
         Map<String, Integer> sortedMap = sortByValues(trace);
-        //System.out.println("After sorting: size=" + sortedMap.size());
 
         Set set = sortedMap.entrySet();
  
@@ -154,7 +141,6 @@ public class MP1 {
             if(counter < 20) {
                 Map.Entry me = (Map.Entry)i.next();
                 ret[counter++] = me.getKey().toString();
-                //System.out.println("key pair: (" + me.getKey() + ", " + me.getValue() + ")");
             }
             else
                 break;
