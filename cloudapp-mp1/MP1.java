@@ -1,14 +1,20 @@
-import java.io.File;
+import java.io.FileReader;
+import java.io.BufferedReader;
 import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.List;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.StringTokenizer;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class MP1 {
     Random generator;
     String userName;
     String inputFileName;
-    String delimiters = " \t,;.?!-:@[](){}_*/";
+    String delimiters = " \t,;.?!-:@[](){}_*+/";
     String[] stopWordsArray = {"i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours",
             "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its",
             "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that",
@@ -19,6 +25,8 @@ public class MP1 {
             "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each",
             "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than",
             "too", "very", "s", "t", "can", "will", "just", "don", "should", "now"};
+
+    HashMap<String, Integer> trace = new HashMap<String, Integer>();
 
     void initialRandomGenerator(String seed) throws NoSuchAlgorithmException {
         MessageDigest messageDigest = MessageDigest.getInstance("SHA");
@@ -49,13 +57,132 @@ public class MP1 {
         this.inputFileName = inputFileName;
     }
 
+    private ArrayList<String> preprocess(String msg, List lList) {
+        StringTokenizer st = new StringTokenizer(msg, this.delimiters);
+        ArrayList<String> list = new ArrayList<String>();
+
+        while(st.hasMoreTokens()) {
+            String token = st.nextToken().toLowerCase().trim();
+            if (!lList.contains(token))
+                list.add(token);
+        }
+
+        //System.out.println("Check: " + list);
+        return list;
+    }
+
+
+
+    private String[] findTop20Words(String message, List lList) {
+        String[] ret = new String[20];
+        //System.out.println("2. Checkout: " + message);
+        ArrayList<String> listOfWords = preprocess(message, lList);
+        Iterator<String> it = listOfWords.iterator();
+           int index = 0;
+        //System.out.println("3. Checkout: ");
+        while (it.hasNext()) {
+            String theNext = it.next();
+            if (trace.containsKey(theNext))
+            {
+                int value = trace.get(theNext) + 1;
+                trace.put(theNext, value);
+            } else {
+                trace.put(theNext, 1);
+            }
+            //ret[index++] = it.next();    
+        }
+
+        return new String[20];
+    }
+
+    private ArrayList<String> getEntireFile() throws FileNotFoundException, IOException {
+        String message;
+        
+        ArrayList<String> listWords = new ArrayList<String>();
+
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(this.inputFileName));
+            int index = 0;
+            while ((message = reader.readLine()) != null)
+            {
+                listWords.add(message);   
+            }
+            reader.close();
+        } catch (FileNotFoundException ex) {
+            System.err.println(ex.getMessage());
+            throw ex;
+        } catch (IOException ex) {
+            System.err.println(ex.getMessage());
+            throw ex;
+        }
+
+        return listWords;
+    }
+
     public String[] process() throws Exception {
         String[] ret = new String[20];
        
         //TODO
+        ArrayList<String> listOfRows = getEntireFile();
+        Integer[] num = getIndexes();
+        List lList = Arrays.asList(stopWordsArray);
 
+        for (int i=0; i<num.length; i++) {
+            //System.out.println("1. Checkout: " + listOfRows.size());
+            //findTop20Words(listOfRows.get(0), lList);
+            findTop20Words(listOfRows.get(num[i]), lList);
+        }
+        //System.out.println("Before sorting: ");
+
+        for(String key : trace.keySet()) {
+            Integer value = trace.get(key);
+            //System.out.println("key pair: (" + key + ", " + value + ")");
+        }
+
+        //TreeMap<String, Integer> sortedMap = SortByValue(trace);  
+        Map<String, Integer> sortedMap = sortByValues(trace);
+        //System.out.println("After sorting: size=" + sortedMap.size());
+
+        Set set = sortedMap.entrySet();
+ 
+        // Get an iterator
+        Iterator i = set.iterator();
+     
+        int counter = 0;
+        // Display elements
+        while(i.hasNext()) {
+            if(counter < 20) {
+                Map.Entry me = (Map.Entry)i.next();
+                ret[counter++] = me.getKey().toString();
+                //System.out.println("key pair: (" + me.getKey() + ", " + me.getValue() + ")");
+            }
+            else
+                break;
+        }
+       
         return ret;
     }
+
+    public static <K, V extends Comparable<V>> Map<K, V> sortByValues(final Map<K, V> map) {
+        Comparator<K> valueComparator = new Comparator<K>() {
+          public int compare(K k1, K k2) {
+            int compare = map.get(k1).compareTo(map.get(k2));
+            if (compare == 0) {
+                int keyCompare = k1.toString().compareTo(k2.toString());
+                if(keyCompare == 0) 
+                    return 1;
+                else
+                    return keyCompare;
+            }
+            else 
+              return -1*compare;
+          }
+        };
+
+        Map<K, V> sortedByValues = new TreeMap<K, V>(valueComparator);
+        sortedByValues.putAll(map);
+        return sortedByValues;
+    }   
 
     public static void main(String[] args) throws Exception {
         if (args.length < 1){
@@ -65,9 +192,15 @@ public class MP1 {
             String userName = args[0];
             String inputFileName = "./input.txt";
             MP1 mp = new MP1(userName, inputFileName);
-            String[] topItems = mp.process();
-            for (String item: topItems){
-                System.out.println(item);
+
+            try {
+                String[] topItems = mp.process();
+                for (String item: topItems){
+                    System.out.println(item);
+                }
+
+            } catch (Exception e) {
+                System.err.println("Stop running" + e);
             }
         }
     }
